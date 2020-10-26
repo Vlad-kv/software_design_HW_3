@@ -29,8 +29,8 @@ public class QueryServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String command = request.getParameter("command");
 
-        if ("max".equals(command)) {
-            try {
+        try {
+            if ("max".equals(command)) {
                 try (DatabaseConnection c = database.getConnection()) {
                     ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT ORDER BY PRICE DESC LIMIT 1", Arrays.asList("name", "price"));
                     response.getWriter().println("<html><body>");
@@ -41,11 +41,7 @@ public class QueryServlet extends HttpServlet {
                     }
                     response.getWriter().println("</body></html>");
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if ("min".equals(command)) {
-            try {
+            } else if ("min".equals(command)) {
                 try (DatabaseConnection c = database.getConnection()) {
                     ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT ORDER BY PRICE LIMIT 1", Arrays.asList("name", "price"));
                     response.getWriter().println("<html><body>");
@@ -56,11 +52,7 @@ public class QueryServlet extends HttpServlet {
                     }
                     response.getWriter().println("</body></html>");
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if ("sum".equals(command)) {
-            try {
+            } else if ("sum".equals(command)) {
                 try (DatabaseConnection c = database.getConnection()) {
                     ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT SUM(price) FROM PRODUCT", Collections.singletonList(""), "int");
                     response.getWriter().println("<html><body>");
@@ -71,11 +63,7 @@ public class QueryServlet extends HttpServlet {
                     }
                     response.getWriter().println("</body></html>");
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if ("count".equals(command)) {
-            try {
+            } else if ("count".equals(command)) {
                 try (DatabaseConnection c = database.getConnection()) {
                     ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT COUNT(*) FROM PRODUCT", Collections.singletonList(""), "int");
                     response.getWriter().println("<html><body>");
@@ -86,11 +74,11 @@ public class QueryServlet extends HttpServlet {
                     }
                     response.getWriter().println("</body></html>");
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            } else {
+                response.getWriter().println("Unknown command: " + command);
             }
-        } else {
-            response.getWriter().println("Unknown command: " + command);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         response.setContentType("text/html");
