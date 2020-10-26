@@ -35,9 +35,6 @@ public class Application {
         context.addServlet(new ServletHolder(new AddProductServlet()), "/add-product");
         context.addServlet(new ServletHolder(new GetProductsServlet()),"/get-products");
         context.addServlet(new ServletHolder(new QueryServlet()),"/query");
-
-        server.start();
-        server.join();
     }
 
     public void start() throws Exception {
