@@ -36,7 +36,9 @@ public class QueryServlet extends HttpServlet {
         if (! queries.containsKey(command)) {
             response.getWriter().println("Unknown command: " + command);
         } else {
+            response.getWriter().println("<html><body>");
             queries.get(command).accept(response);
+            response.getWriter().println("</body></html>");
         }
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
@@ -45,13 +47,11 @@ public class QueryServlet extends HttpServlet {
     private void calcIntFunction(String sqlFunction, String message, HttpServletResponse response) {
         try (DatabaseConnection c = database.getConnection()) {
             ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT " + sqlFunction + " FROM PRODUCT", Collections.singletonList(""), "int");
-            response.getWriter().println("<html><body>");
             response.getWriter().println(message);
 
             if (! res.isEmpty()) {
                 response.getWriter().println(res.get(0).get(0));
             }
-            response.getWriter().println("</body></html>");
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -60,13 +60,11 @@ public class QueryServlet extends HttpServlet {
     private void getTopProduct(String type, HttpServletResponse response) {
         try (DatabaseConnection c = database.getConnection()) {
             ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT ORDER BY PRICE " + (type.equals("max") ? "DESC " : "") + "LIMIT 1", Arrays.asList("name", "price"));
-            response.getWriter().println("<html><body>");
             response.getWriter().println("<h1>Product with " + type + " price: </h1>");
 
             for (ArrayList<String> line : res) {
                 response.getWriter().println(line.get(0) + "\t" + line.get(1) + "</br>");
             }
-            response.getWriter().println("</body></html>");
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
