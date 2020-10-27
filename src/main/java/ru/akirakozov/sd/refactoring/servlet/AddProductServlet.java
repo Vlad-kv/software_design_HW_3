@@ -29,12 +29,10 @@ public class AddProductServlet extends HttpServlet {
 
         OkHttpServletResponse r = new OkHttpServletResponse(response);
 
-        try {
-            try (DatabaseConnection c = database.getConnection()) {
-                String sql = "INSERT INTO PRODUCT " +
-                        "(NAME, PRICE) VALUES (\"" + name + "\"," + price + ")";
-                c.executeSQLUpdate(sql);
-            }
+        try (DatabaseConnection c = database.getConnection()) {
+            String sql = "INSERT INTO PRODUCT " +
+                    "(NAME, PRICE) VALUES (\"" + name + "\"," + price + ")";
+            c.executeSQLUpdate(sql);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

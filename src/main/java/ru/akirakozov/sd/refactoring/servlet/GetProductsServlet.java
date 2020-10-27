@@ -28,16 +28,15 @@ public class GetProductsServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         OkHttpServletResponse r = new OkHttpServletResponse(response);
-        try {
-            try (DatabaseConnection c = database.getConnection()) {
-                ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT", Arrays.asList("name", "price"));
-                r.println("<html><body>");
 
-                for (ArrayList<String> row : res) {
-                    r.println(row.get(0) + "\t" + row.get(1) + "</br>");
-                }
-                r.println("</body></html>");
+        try (DatabaseConnection c = database.getConnection()) {
+            ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT", Arrays.asList("name", "price"));
+            r.println("<html><body>");
+
+            for (ArrayList<String> row : res) {
+                r.println(row.get(0) + "\t" + row.get(1) + "</br>");
             }
+            r.println("</body></html>");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
