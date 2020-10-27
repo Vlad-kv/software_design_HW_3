@@ -19,7 +19,7 @@
 *.tar.gz
 *.rar
 
-
+*.db
 refactoring.iml
 .idea/*
 
