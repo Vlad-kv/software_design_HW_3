@@ -7,82 +7,69 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.sql.*;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * @author akirakozov
  */
 public class QueryServlet extends HttpServlet {
     private final Database database;
+    private final Map<String, Consumer<HttpServletResponse>> queries;
 
     public QueryServlet(Database database) {
         this.database = database;
+
+        queries = new TreeMap<>();
+        queries.put("max", (HttpServletResponse r) -> getTopProduct("max", r));
+        queries.put("min", (HttpServletResponse r) -> getTopProduct("min", r));
+        queries.put("sum", (HttpServletResponse r) -> calcIntFunction("SUM(price)", "Summary price: ", r));
+        queries.put("count", (HttpServletResponse r) -> calcIntFunction("COUNT(*)", "Number of products: ", r));
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String command = request.getParameter("command");
 
-        try {
-            if ("max".equals(command)) {
-                try (DatabaseConnection c = database.getConnection()) {
-                    ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT ORDER BY PRICE DESC LIMIT 1", Arrays.asList("name", "price"));
-                    response.getWriter().println("<html><body>");
-                    response.getWriter().println("<h1>Product with max price: </h1>");
-
-                    for (ArrayList<String> line : res) {
-                        response.getWriter().println(line.get(0) + "\t" + line.get(1) + "</br>");
-                    }
-                    response.getWriter().println("</body></html>");
-                }
-            } else if ("min".equals(command)) {
-                try (DatabaseConnection c = database.getConnection()) {
-                    ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT ORDER BY PRICE LIMIT 1", Arrays.asList("name", "price"));
-                    response.getWriter().println("<html><body>");
-                    response.getWriter().println("<h1>Product with min price: </h1>");
-
-                    for (ArrayList<String> line : res) {
-                        response.getWriter().println(line.get(0) + "\t" + line.get(1) + "</br>");
-                    }
-                    response.getWriter().println("</body></html>");
-                }
-            } else if ("sum".equals(command)) {
-                try (DatabaseConnection c = database.getConnection()) {
-                    ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT SUM(price) FROM PRODUCT", Collections.singletonList(""), "int");
-                    response.getWriter().println("<html><body>");
-                    response.getWriter().println("Summary price: ");
-
-                    if (! res.isEmpty()) {
-                        response.getWriter().println(res.get(0).get(0));
-                    }
-                    response.getWriter().println("</body></html>");
-                }
-            } else if ("count".equals(command)) {
-                try (DatabaseConnection c = database.getConnection()) {
-                    ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT COUNT(*) FROM PRODUCT", Collections.singletonList(""), "int");
-                    response.getWriter().println("<html><body>");
-                    response.getWriter().println("Number of products: ");
-
-                    if (! res.isEmpty()) {
-                        response.getWriter().println(res.get(0).get(0));
-                    }
-                    response.getWriter().println("</body></html>");
-                }
-            } else {
-                response.getWriter().println("Unknown command: " + command);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (! queries.containsKey(command)) {
+            response.getWriter().println("Unknown command: " + command);
+        } else {
+            queries.get(command).accept(response);
         }
-
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
+    }
+
+    private void calcIntFunction(String sqlFunction, String message, HttpServletResponse response) {
+        try (DatabaseConnection c = database.getConnection()) {
+            ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT " + sqlFunction + " FROM PRODUCT", Collections.singletonList(""), "int");
+            response.getWriter().println("<html><body>");
+            response.getWriter().println(message);
+
+            if (! res.isEmpty()) {
+                response.getWriter().println(res.get(0).get(0));
+            }
+            response.getWriter().println("</body></html>");
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private void getTopProduct(String type, HttpServletResponse response) {
+        try (DatabaseConnection c = database.getConnection()) {
+            ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT ORDER BY PRICE " + (type.equals("max") ? "DESC " : "") + "LIMIT 1", Arrays.asList("name", "price"));
+            response.getWriter().println("<html><body>");
+            response.getWriter().println("<h1>Product with " + type + " price: </h1>");
+
+            for (ArrayList<String> line : res) {
+                response.getWriter().println(line.get(0) + "\t" + line.get(1) + "</br>");
+            }
+            response.getWriter().println("</body></html>");
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
 }
