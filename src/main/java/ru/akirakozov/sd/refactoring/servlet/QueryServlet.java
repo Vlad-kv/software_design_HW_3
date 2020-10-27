@@ -2,6 +2,7 @@ package ru.akirakozov.sd.refactoring.servlet;
 
 import ru.akirakozov.sd.refactoring.Database;
 import ru.akirakozov.sd.refactoring.DatabaseConnection;
+import ru.akirakozov.sd.refactoring.OkHttpServletResponse;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -17,53 +18,52 @@ import java.util.function.Consumer;
  */
 public class QueryServlet extends HttpServlet {
     private final Database database;
-    private final Map<String, Consumer<HttpServletResponse>> queries;
+    private final Map<String, Consumer<OkHttpServletResponse>> queries;
 
     public QueryServlet(Database database) {
         this.database = database;
 
         queries = new TreeMap<>();
-        queries.put("max", (HttpServletResponse r) -> getTopProduct("max", r));
-        queries.put("min", (HttpServletResponse r) -> getTopProduct("min", r));
-        queries.put("sum", (HttpServletResponse r) -> calcIntFunction("SUM(price)", "Summary price: ", r));
-        queries.put("count", (HttpServletResponse r) -> calcIntFunction("COUNT(*)", "Number of products: ", r));
+        queries.put("max", (OkHttpServletResponse r) -> getTopProduct("max", r));
+        queries.put("min", (OkHttpServletResponse r) -> getTopProduct("min", r));
+        queries.put("sum", (OkHttpServletResponse r) -> calcIntFunction("SUM(price)", "Summary price: ", r));
+        queries.put("count", (OkHttpServletResponse r) -> calcIntFunction("COUNT(*)", "Number of products: ", r));
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String command = request.getParameter("command");
+        OkHttpServletResponse r = new OkHttpServletResponse(response);
 
         if (! queries.containsKey(command)) {
-            response.getWriter().println("Unknown command: " + command);
+            r.println("Unknown command: " + command);
         } else {
-            response.getWriter().println("<html><body>");
-            queries.get(command).accept(response);
-            response.getWriter().println("</body></html>");
+            r.println("<html><body>");
+            queries.get(command).accept(r);
+            r.println("</body></html>");
         }
-        response.setContentType("text/html");
-        response.setStatus(HttpServletResponse.SC_OK);
     }
 
-    private void calcIntFunction(String sqlFunction, String message, HttpServletResponse response) {
+    private void calcIntFunction(String sqlFunction, String message, OkHttpServletResponse response) {
         try (DatabaseConnection c = database.getConnection()) {
             ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT " + sqlFunction + " FROM PRODUCT", Collections.singletonList(""), "int");
-            response.getWriter().println(message);
+            response.println(message);
 
             if (! res.isEmpty()) {
-                response.getWriter().println(res.get(0).get(0));
+                response.println(res.get(0).get(0));
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
 
-    private void getTopProduct(String type, HttpServletResponse response) {
+    private void getTopProduct(String type, OkHttpServletResponse response) {
         try (DatabaseConnection c = database.getConnection()) {
             ArrayList<ArrayList<String>> res = c.executeSQLQuery("SELECT * FROM PRODUCT ORDER BY PRICE " + (type.equals("max") ? "DESC " : "") + "LIMIT 1", Arrays.asList("name", "price"));
-            response.getWriter().println("<h1>Product with " + type + " price: </h1>");
+            response.println("<h1>Product with " + type + " price: </h1>");
 
             for (ArrayList<String> line : res) {
-                response.getWriter().println(line.get(0) + "\t" + line.get(1) + "</br>");
+                response.println(line.get(0) + "\t" + line.get(1) + "</br>");
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);

@@ -2,6 +2,7 @@ package ru.akirakozov.sd.refactoring.servlet;
 
 import ru.akirakozov.sd.refactoring.Database;
 import ru.akirakozov.sd.refactoring.DatabaseConnection;
+import ru.akirakozov.sd.refactoring.OkHttpServletResponse;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -26,6 +27,8 @@ public class AddProductServlet extends HttpServlet {
         String name = request.getParameter("name");
         long price = Long.parseLong(request.getParameter("price"));
 
+        OkHttpServletResponse r = new OkHttpServletResponse(response);
+
         try {
             try (DatabaseConnection c = database.getConnection()) {
                 String sql = "INSERT INTO PRODUCT " +
@@ -35,9 +38,6 @@ public class AddProductServlet extends HttpServlet {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        response.setContentType("text/html");
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("OK");
+        r.println("OK");
     }
 }
